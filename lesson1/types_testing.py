@@ -12,7 +12,7 @@ l[2:5] = [0]
 print "test l", l
 
 
-s = {i for i in xrange(10)}
+s = {i for i in xrange(10)} == set(xrange(10))
 s1 = {i for i in xrange(2, 10, 2)}
 print s & s1
 print s | s1
