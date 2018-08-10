@@ -71,9 +71,9 @@ class Config(object):
             fn.write("{0} = {1}\n".format(k, str(v)))
 
     @staticmethod
-    def process_fn(func_rw, f):
+    def process_fn(func_rw, f, mode='r'):
         if isinstance(f, basestring):
-            with open(f) as fn:
+            with open(f, mode) as fn:
                 func_rw(fn)
         else:
             fn = f
@@ -83,7 +83,7 @@ class Config(object):
         self.process_fn(self._load_fn, f)
 
     def save(self, f):
-        self.process_fn(self._save_fn, f)
+        self.process_fn(self._save_fn, f, mode='w')
 
     def get_value(self, key):
         return self.__params.get(key)

@@ -93,6 +93,11 @@ class Mp3Info(object):
     def album(self):
         return self._tags.get('TALB')
 
+    @album.setter
+    def album(self, val):
+        self._tags['TALB'] = val
+
+
     @property
     def title(self):
         return self._tags.get('TIT2')
@@ -123,6 +128,7 @@ if __name__ == "__main__":
 
         title = info.title
         album = info.album
+        info.album = 'hello'
         comp = info.composer
         print comp, album, title
     # s = '/media/sf_Download1/Martin Merkel Feat. Malefiz - Voyager (Vocal Edit).mp3'
