@@ -67,6 +67,7 @@ def my_range(start=None, stop=None, step=1):
         x0 += step
     return ret_list
 
+
 my_gen = my_xrange(5)
 print my_gen
 for i in my_xrange(5):

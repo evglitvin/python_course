@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 
+from core.utils.profiler import profile
+
 
 class UnknownID3TAG(Exception):
     pass
@@ -52,7 +54,7 @@ def read_str_tag(stream, data_len):
     if len(string_data) == data_len:
         is_unicode = ord(string_data[0])
         start_string = 1
-        # according to spec here might be 3 letters of language wich ends with '00'
+        # according to spec here might be 3 letters of language which ends with '00'
         if get_int(string_data[4:6]) == 0:
             start_string = 6
         return decode(string_data[start_string:], is_unicode)
@@ -74,7 +76,7 @@ class Mp3Info(object):
         with open(self._file, 'rb') as stream:
             try:
                 id3_info = read_id3(stream)
-                self._id3_version = id3_info[0]
+                self._id3_version = id3_info[1]
             except (UnknownID3TAG, OSError):
                 return
 
@@ -97,6 +99,9 @@ class Mp3Info(object):
     def album(self, val):
         self._tags['TALB'] = val
 
+    @property
+    def version(self):
+        return self._id3_version
 
     @property
     def title(self):
@@ -128,8 +133,7 @@ if __name__ == "__main__":
 
         title = info.title
         album = info.album
-        info.album = 'hello'
         comp = info.composer
-        print comp, album, title
+        print comp, album, title, get_int(info.version)
     # s = '/media/sf_Download1/Martin Merkel Feat. Malefiz - Voyager (Vocal Edit).mp3'
     # print Mp3Info(s).title
