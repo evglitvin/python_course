@@ -60,10 +60,16 @@ class Rect(object):
         return self._pos.x < point.x and self._pos.y < point.y and \
                self._pos.x + self._size[0] > point.x and self._pos.y + self._size[1] > point.y
 
+    __contains__ = point_in_rect
+
     def overlap(self, other):
         for point in other.bounding_box:
             if self.point_in_rect(point):
                 return True
+        for point in self.bounding_box:
+            if other.point_in_rect(point):
+                return True
+
         return False
 
 
