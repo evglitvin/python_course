@@ -1,22 +1,36 @@
 
+from __future__ import print_function
 import socket
+import threading
 import time
+from multiprocessing.dummy import Pool
+
+lock = threading.RLock()
+
+def process_conn(conn):
+    lock.release()
+    data = conn.recv(1024)
+    if data:
+        print('Recv: {0}'.format(data))
+        conn.send('hello\r\n')
 
 
 def run_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(('localhost', 80))
+    sock.bind(('localhost', 8000))
     sock.listen(2)
 
-    conn, addr = sock.accept()
-    while True:
-        data = conn.recv(1024)
-        if data == b'exit\r\n'.lower():
-            break
-        else:
-            print('Recv: {0} from {1}'.format(data, addr))
-            conn.send(b'hello\r\n')
-        time.sleep(0.0005)
+    timeout = time.time() + 300
+
+    thr_pool = Pool(1000)
+
+    while time.time() < timeout:
+        conn, addr = sock.accept()
+        # thr = Thread(target=process_conn, args=(conn,))
+        # thr.start()
+        thr_pool.apply_async(process_conn, args=(conn,))
+    thr_pool.close()
+    thr_pool.join()
 
     sock.close()
 
@@ -24,9 +38,9 @@ def run_server():
 def run_client():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    sock.connect(('localhost', 80))
+    sock.connect(('localhost', 8000))
 
-    sock.send(b'hello world\r\n')
+    sock.send('hello world\r\n')
     print(sock.recv(1024))
     sock.close()
 
