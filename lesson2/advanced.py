@@ -13,12 +13,14 @@ def lru_cache(func):
     return wrapper
 
 
-@lru_cache
 def func(n):
     print "I've got {}".format(n)
     return n - 1
 
+func = lru_cache(func)
 
-for _ in xrange(5):
-    # function will be called only once as argument is the same
-    print func(100)
+# for _ in xrange(5):
+#     # function will be called only once as argument is the same
+#     print func(100)
+
+
