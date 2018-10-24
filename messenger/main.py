@@ -1,8 +1,11 @@
 import json
 import select
 import socket
+import threading
+import time
 import weakref
-from multiprocessing import Queue
+from Queue import Empty
+from Queue import Queue
 from multiprocessing.pool import Pool
 
 
@@ -12,9 +15,18 @@ class UserStatus(object):
     BUSY = 3
 
 
+class MessageType(object):
+    INIT = 0
+    STATUS = 1
+    MESSAGE = 2
+    ADD_FRIEND = 3
+    DEL_FRIEND = 4
+
+
 class DBUser(object):
-    def __init__(self, u_id):
-        self._u_id = u_id
+    def __init__(self, u_id, nickname):
+        self._u_id = hash(nickname)
+        self._nickname = nickname
         self._status = UserStatus.OFFLINE
         # set of DBUser (friends)
         self._fr_users = weakref.WeakSet()
@@ -39,28 +51,67 @@ class DBUser(object):
     def status(self, stat):
         self._status = stat
 
+    @property
+    def nickname(self):
+        return self._nickname
+
+    @nickname.setter
+    def nickname(self, nick):
+        self._nickname = nick
+
     def __hash__(self):
-        return hash(self._u_id)
+        return self._u_id
 
 
-class DBUserSet(set):
+class DBUserDict(dict):
     pass
 
 
-class DataContext(object):
-    def __init__(self, queue):
-        self.connected_users = DBUserSet()
-        self._queue = queue
-
-    def get_all_users(self):
-        pass
-
-
-def process_connection(conn, queue):
+def process_connection(conn, connected_users):
     data = conn.recv(1024)
     parsed_data = json.loads(data)
-    print parsed_data['nickname'] + " connected"
-    queue.put(parsed_data['nickname'])
+    nick = parsed_data.get('nickname')
+    if not nick:
+        return
+    dbuser = connected_users.setdefault(nick, DBUser(None, nick))
+    msg_type = parsed_data.get('type')
+    if msg_type == MessageType.STATUS:
+        # statuses = connected_users.get_statuses()
+        statuses = [{"nickname": friend.nickname, "status": friend.status}
+                    for friend in dbuser.get_users()]
+        resp = {"nickname": nick,
+                "friend": statuses}
+        resp_json = json.dumps(resp)
+        conn.send(resp_json)
+    elif msg_type == MessageType.INIT:
+
+        print "{} connected".format(nick)
+    else:
+        print "WARN: unknown message type"
+
+
+class Driver(threading.Thread):
+    def __init__(self, queue):
+        super(Driver, self).__init__()
+        self.daemon = True
+        self._queue = queue
+        self._connected_users = DBUserDict()
+        self._connections = []
+
+    def run(self):
+        while True:
+            try:
+                conn = self._queue.get(block=False)
+                self._connections.append(conn)
+            except Empty:
+                pass
+            # Windows failure
+            if not self._connections:
+                time.sleep(0.5)
+                continue
+            connects, _, _ = select.select(self._connections, [], [], 0.5)
+            for conn in connects:
+                process_connection(conn, self._connected_users)
 
 
 def run_server():
@@ -71,22 +122,18 @@ def run_server():
     sock.bind(('localhost', 8000))
     sock.listen(2)
 
-    context = DataContext(q)
-
-    pool = Pool(100)
+    driver = Driver(q)
+    driver.start()
 
     try:
         while True:
             conn, addr = sock.accept()
             # conn.recv(1024)
             # select.select()
+            q.put(conn)
 
-            pool.apply_async(process_connection,
-                             args=(conn, q))
     except KeyboardInterrupt:
         print "Server is shutting down"
-    pool.close()
-    pool.join()
 
 
 if __name__ == "__main__":
