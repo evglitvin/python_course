@@ -5,10 +5,15 @@ from messenger.main import DBUser, UserStatus
 
 class TestDBUser(unittest.TestCase):
     def test_db_user(self):
-        u = DBUser(0)
-        u1 = DBUser(1)
-        u1.status = UserStatus.ONLINE
+        u = DBUser(0, "nick1")
+        u1 = DBUser(1, "nick2")
+        u1.status = UserStatus.OFFLINE
         u.add_user(u1)
         for user in u.get_users():
-            self.assertTrue(user.status == UserStatus.OFFLINE,
-                            "UserStatus not match")
+            self.assertEqual(user.status, UserStatus.OFFLINE)
+
+    def test_user_status(self):
+        self.assertEqual(UserStatus.to_string(1),
+                         "UserStatus.ONLINE")
+        self.assertEqual(UserStatus.to_string(-1),
+                         "UNKNOWN")

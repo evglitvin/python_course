@@ -4,18 +4,34 @@ import socket
 import threading
 import time
 import weakref
-from Queue import Empty
-from Queue import Queue
-from multiprocessing.pool import Pool
+from Queue import Empty, Queue
 
 
-class UserStatus(object):
+class Enum(object):
+    __values__ = None
+
+    @classmethod
+    def to_string(cls, key):
+        try:
+            return "{}.{}".format(cls.__name__, cls.__values__[key])
+        except TypeError:
+            try:
+                n_dict = {item[1]: item[0] for item in cls.__dict__.iteritems()}
+                cls.__values__ = n_dict
+                return "{}.{}".format(cls.__name__, cls.__values__[key])
+            except KeyError:
+                return "UNKNOWN"
+        except KeyError:
+            return "UNKNOWN"
+
+
+class UserStatus(Enum):
     ONLINE = 1
     OFFLINE = 2
     BUSY = 3
 
 
-class MessageType(object):
+class MessageType(Enum):
     INIT = 0
     STATUS = 1
     MESSAGE = 2
@@ -67,12 +83,20 @@ class DBUserDict(dict):
     pass
 
 
-def process_connection(conn, connected_users):
+def process_connection(conn, connected_users, conn_map):
     data = conn.recv(1024)
-    parsed_data = json.loads(data)
+    try:
+        parsed_data = json.loads(data)
+    except ValueError:
+        db_user = conn_map.get(conn.fileno(), None)
+        del conn_map[conn.fileno()]
+        if db_user:
+            db_user.status = UserStatus.OFFLINE
+            print "user disconnected: {}".format(db_user.nickname)
+            return False
     nick = parsed_data.get('nickname')
     if not nick:
-        return
+        return True
     dbuser = connected_users.setdefault(nick, DBUser(None, nick))
     msg_type = parsed_data.get('type')
     if msg_type == MessageType.STATUS:
@@ -84,10 +108,15 @@ def process_connection(conn, connected_users):
         resp_json = json.dumps(resp)
         conn.send(resp_json)
     elif msg_type == MessageType.INIT:
-
-        print "{} connected".format(nick)
+        dbuser.status = parsed_data.get("status")
+        conn_map[conn.fileno()] = dbuser
+        print "{} connected status: {}".format(nick, UserStatus.to_string(dbuser.status))
+    elif msg_type == MessageType.ADD_FRIEND:
+        dbuser.status = parsed_data.get("status")
+        print "{} connected status: {}".format(nick, UserStatus.to_string(dbuser.status))
     else:
         print "WARN: unknown message type"
+    return True
 
 
 class Driver(threading.Thread):
@@ -97,6 +126,7 @@ class Driver(threading.Thread):
         self._queue = queue
         self._connected_users = DBUserDict()
         self._connections = []
+        self._conn_map = {}
 
     def run(self):
         while True:
@@ -111,14 +141,15 @@ class Driver(threading.Thread):
                 continue
             connects, _, _ = select.select(self._connections, [], [], 0.5)
             for conn in connects:
-                process_connection(conn, self._connected_users)
-
+                if not process_connection(conn, self._connected_users, self._conn_map):
+                    self._connections.remove(conn)
 
 def run_server():
     q = Queue()
 
     next_user_id = 0
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('localhost', 8000))
     sock.listen(2)
 
