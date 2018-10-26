@@ -1,6 +1,7 @@
 import unittest
 
-from messenger.main import DBUser, UserStatus
+from messenger.main import UserStatus
+from messenger.dbuser import DBUser
 
 
 class TestDBUser(unittest.TestCase):
