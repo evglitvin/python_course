@@ -1,7 +1,8 @@
 import unittest
 
-from messenger.main import UserStatus
+from messenger.user_status import UserStatus
 from messenger.dbuser import DBUser
+from messenger.utils import JsonObject
 
 
 class TestDBUser(unittest.TestCase):
@@ -18,3 +19,10 @@ class TestDBUser(unittest.TestCase):
                          "UserStatus.ONLINE")
         self.assertEqual(UserStatus.to_string(-1),
                          "UNKNOWN")
+
+
+class TestJsonObj(unittest.TestCase):
+    def test_json_obj(self):
+        json_dict = {'field1': 1, 'field2': 2}
+        self.assertEqual(JsonObject(json_dict).field1, 1)
+        self.assertEqual(JsonObject(json_dict).field2, 2)

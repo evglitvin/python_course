@@ -14,3 +14,10 @@ class Enum(object):
                 return "UNKNOWN"
         except KeyError:
             return "UNKNOWN"
+
+
+class JsonObject(object):
+    def __init__(self, json_obj=None):
+        self.__dict__.update(json_obj or {})
+
+    __getattr__ = object.__dict__.get

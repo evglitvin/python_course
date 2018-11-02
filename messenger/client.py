@@ -1,8 +1,10 @@
 import json
 import socket
+import time
 from argparse import ArgumentParser
 
-from messenger.main import MessageType, UserStatus
+from messenger.message import MessageType, Message
+from messenger.user_status import UserStatus
 
 
 def run_client():
@@ -19,6 +21,18 @@ def run_client():
            "status": args.status}
     sock.send(json.dumps(msg))
     print(sock.recv(1024))
+    print "Connected"
+    time.sleep(10)
+    m = Message()
+    m.type = MessageType.ADD_FRIEND
+    m.nickname = args.nickname
+    if m.nickname != 'Recipient':
+        m.recipient = 'Recipient'
+
+        sock.send(m.to_json())
+
+        print(sock.recv(1024))
+
     sock.close()
 
 

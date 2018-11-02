@@ -1,6 +1,6 @@
 import weakref
 
-from messenger.main import UserStatus
+from messenger.user_status import UserStatus
 
 
 class DBUserDict(dict):
@@ -17,6 +17,7 @@ class DBUser(object):
 
     def add_user(self, user):
         self._fr_users.add(user)
+        user.add_user(self)
 
     def del_user(self, user):
         try:

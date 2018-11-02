@@ -4,33 +4,24 @@ import socket
 import threading
 import time
 from Queue import Empty, Queue
-
-from messenger.dbuser import DBUser
 from messenger.message import Message, MessageProcessor
-from messenger.utils import Enum
 
 
-class UserStatus(Enum):
-    ONLINE = 1
-    OFFLINE = 2
-    BUSY = 3
-
-
-def process_connection(conn, msg_proc, conn_map):
-    data = conn.recv(1024)
+def process_connection(conn_sender, msg_proc):
+    data = conn_sender.recv(1024)
     try:
         parsed_data = json.loads(data)
     except ValueError:
-        db_user = conn_map.get(conn.fileno(), None)
-        del conn_map[conn.fileno()]
-        if db_user:
-            db_user.status = UserStatus.OFFLINE
-            print "user disconnected: {}".format(db_user.nickname)
-            return False
+        # db_user = conn_map.get(conn.fileno(), None)
+        # del conn_map[conn.fileno()]
+        # if db_user:
+        #     db_user.status = UserStatus.OFFLINE
+        #     print "user disconnected: {}".format(db_user.nickname)
+        return False
 
-    message = Message.parse(parsed_data)
+    message = Message(parsed_data)
     if message:
-        msg_proc.process_message(message)
+        msg_proc.process_message(message, conn_sender)
     return True
 
 
@@ -40,7 +31,6 @@ class Driver(threading.Thread):
         self.daemon = True
         self._queue = queue
         self._connections = []
-        self._conn_map = {}
         self._msg_processor = MessageProcessor()
 
     def run(self):
@@ -55,8 +45,9 @@ class Driver(threading.Thread):
                 time.sleep(0.5)
                 continue
             connects, _, _ = select.select(self._connections, [], [], 0.5)
+            # TODO Parallelize connection processing
             for conn in connects:
-                if not process_connection(conn, self._msg_processor, self._conn_map):
+                if not process_connection(conn, self._msg_processor):
                     self._connections.remove(conn)
 
 
