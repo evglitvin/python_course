@@ -1,4 +1,5 @@
 import json
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from messenger.dbuser import DBUserDict, DBUser
 from messenger.user_status import UserStatus
@@ -22,10 +23,34 @@ class MessageType(Enum):
     DEL_FRIEND = 8
 
 
-class MessageProcessor(object):
+class MessageQueue(object):
     def __init__(self):
-        self._connected_users = DBUserDict()
+        # {DBUser(): []}
+        self._messages = defaultdict(set)
+
+    def get_messages(self, user):
+        return self._messages[user]
+
+    def add_message(self, recipient, message):
+        self._messages[recipient].add(message)
+
+
+class Processor(object):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
         self._msg_queue = MessageQueue()
+
+    @abstractmethod
+    def process_message(self, message, conn_sender):
+        raise NotImplementedError
+
+Processor()
+
+class MessageProcessor(Processor):
+    def __init__(self):
+        super(MessageProcessor, self).__init__()
+        self._connected_users = DBUserDict()
 
     def process_message(self, message, conn_sender):
         """
@@ -96,13 +121,3 @@ class Message(JsonObject):
         return json.dumps(self.__dict__)
 
 
-class MessageQueue(object):
-    def __init__(self):
-        # {DBUser(): []}
-        self._messages = defaultdict(set)
-
-    def get_messages(self, user):
-        return self._messages[user]
-
-    def add_message(self, recipient, message):
-        self._messages[recipient].add(message)
