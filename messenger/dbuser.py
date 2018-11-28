@@ -16,8 +16,9 @@ class DBUser(object):
         self._fr_users = weakref.WeakSet()
 
     def add_user(self, user):
-        self._fr_users.add(user)
-        user.add_user(self)
+        if user not in self._fr_users:
+            self._fr_users.add(user)
+            user.add_user(self)
 
     def del_user(self, user):
         try:

@@ -1,4 +1,5 @@
 import os
+from contextlib import contextmanager
 from io import IOBase
 from struct import Struct
 
@@ -67,24 +68,30 @@ class IndexedFile(object):
             yield self._struct.unpack(self._idxs_data[item_id: item_id + self.INDEX_SIZE])[0]
 
     def writeline(self, line):
-        assert self._offset == self._size, "Insert isn't allowed"
+        assert self._idx_size == self._size, "Insert isn't allowed"
         self._file_obj.write(line + '\n')
-        self._idxs.append(len(line) + 1)
-        self._idxs_obj.write(self._struct.pack(len(line) + 1))
-        self._size += len(line) + 1
+        llen = len(line) + 1
+        self._idxs.append(llen)
+        self._idxs_obj.write(self._struct.pack(llen))
+        self._size += llen
+        self._idx_size += llen
 
-    def readline(self, limit):
-        return self._file_obj.readline(limit)
+    def readline(self):
+        self._cline += 1
+        return self._file_obj.readline()
 
     def seek(self, nline, whence=0):
         offset = 0
         if whence == 0:
             offset = sum(self._idxs[0: nline])
+            self._cline = nline
         elif whence == 1:
-            offset = sum(self._idxs[self._cline: nline])
+            assert nline > self._cline
+            offset = sum(self._idxs[self._cline: nline + self._cline])
+            self._cline += nline + self._cline
         elif whence == 2 and nline != 0:
-            offset = -sum(self._idxs[-nline:])
-        self._cline = nline
+            offset = -sum(self._idxs[nline:])
+            self._cline = nline
         self._file_obj.seek(offset, whence)
 
     def close(self):
@@ -94,8 +101,21 @@ class IndexedFile(object):
         if self._idxs_obj:
             self._idxs_obj.close()
 
+    def __enter__(self):
+        return self
 
-ifile = IndexedFile('name1.txt')
-ifile.seek(0, 2)
-ifile.writeline('hello')
-ifile.close()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+@contextmanager
+def manager():
+    a = 1
+    print 'a', a
+    yield
+    a = 2
+    print 'a', a
+
+
+with manager() as m:
+    print 100
