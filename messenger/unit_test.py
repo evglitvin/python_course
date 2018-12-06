@@ -2,6 +2,7 @@ import os
 import tempfile
 import unittest
 from contextlib import contextmanager
+from io import IOBase
 
 from messenger.user_status import UserStatus
 from messenger.dbuser import DBUser

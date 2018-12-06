@@ -45,7 +45,6 @@ class Processor(object):
     def process_message(self, message, conn_sender):
         raise NotImplementedError
 
-Processor()
 
 class MessageProcessor(Processor):
     def __init__(self):

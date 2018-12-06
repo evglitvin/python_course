@@ -1,7 +1,9 @@
 import os
 from contextlib import contextmanager
+from functools import wraps, partial
 from io import IOBase
 from struct import Struct
+from time import time
 
 
 class Enum(object):
@@ -32,6 +34,8 @@ class JsonObject(object):
 class IndexedFile(object):
     INDEX_SIZE = 4
 
+    BUCKET_LENGTH = 1000
+
     def __init__(self, filename):
         self._fname = filename
 
@@ -60,8 +64,37 @@ class IndexedFile(object):
             self._idxs.append(idx)
             self._idx_size += idx
 
+        self.sum_idx_list = []
+
         self._offset = 0
         self._cline = 0
+
+    def get_cached_sum(self, start, end):
+        """
+        Return cache sums
+        :param start: int
+        :param end: int
+        :return: int
+        """
+
+        if start > 0:
+            s = sum(self._idxs[start: end])
+        else:
+            try:
+                s = self.sum_idx_list[end / self.BUCKET_LENGTH]
+                s += sum(self._idxs[(end / self.BUCKET_LENGTH) * self.BUCKET_LENGTH: end])
+            except IndexError:
+                s = 0
+                self.sum_idx_list = [0]
+                i = 0
+                while i < end / self.BUCKET_LENGTH:
+                    temp_sum = sum(self._idxs[i * self.BUCKET_LENGTH: (i + 1) * self.BUCKET_LENGTH])
+                    s += temp_sum
+                    self.sum_idx_list.append(s)
+                    i += 1
+                # / - moving to start of the bucket
+                s += sum(self._idxs[i * self.BUCKET_LENGTH: end])
+        return s
 
     def read_indexes(self):
         for item_id in xrange(0, len(self._idxs_data), self.INDEX_SIZE):
@@ -83,7 +116,7 @@ class IndexedFile(object):
     def seek(self, nline, whence=0):
         offset = 0
         if whence == 0:
-            offset = sum(self._idxs[0: nline])
+            offset = self.get_cached_sum(0, nline)
             self._cline = nline
         elif whence == 1:
             assert nline > self._cline
@@ -108,14 +141,12 @@ class IndexedFile(object):
         self.close()
 
 
-@contextmanager
-def manager():
-    a = 1
-    print 'a', a
-    yield
-    a = 2
-    print 'a', a
+def print_duration(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time()
+        res = func(*args, **kwargs)
+        print round(time() - start_time, 4)
+        return res
 
-
-with manager() as m:
-    print 100
+    return wrapper
