@@ -2,6 +2,7 @@
 
 # set1 = set([[1]])    wrong set elements
 from _weakref import ref
+from time import time
 
 set2 = {a for a in xrange(100) if a % 5}
 
@@ -9,12 +10,19 @@ tup = (1,) + (2, 3, 4)
 for _ in xrange(10):
     tup += (10,)
 
+st = time()
+s1 = ""
+for i in xrange(1000000):
+    s1 += str(i)
+
+print time() - st
+st = time()
 s = []
-for _ in xrange(10):
-    s.append("jflerkgre")
+for i in xrange(1000000):
+    s.append(str(i))
 
-s = ", ".join(s)
-
+s = "".join(s)
+print time() - st
 
 # dict
 dict1 = {k: k**2 for k in xrange(100)}
@@ -41,9 +49,6 @@ print d
 d = {1:2}
 d.pop(1)
 print "dict", d
-
-
-
 
 def get_dict(dict_fn):
     d = dict_fn()

@@ -19,8 +19,8 @@ def func(n):
 
 func = lru_cache(func)
 
-# for _ in xrange(5):
-#     # function will be called only once as argument is the same
-#     print func(100)
+for _ in xrange(5):
+    # function will be called only once as argument is the same
+    print func()
 
 

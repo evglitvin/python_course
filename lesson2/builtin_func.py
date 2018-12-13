@@ -13,9 +13,11 @@ a = bool(0)
 def func():
     return 1
 
-class PseudoFunc(object):
-    def __init__(self, a):
-        self._a = a
+
+class PseudoFunc:
+
+    def __init__(self):
+        self._a = 1
 
     # def __cmp__(self, other):
     #     return self._a - other._a
@@ -29,9 +31,9 @@ class PseudoFunc(object):
         self._a = v
 
     def __call__(self, *args, **kwargs):
-       return 1
+       return self
 
-c = PseudoFunc(1)
+c = PseudoFunc()()()()()()()()()()()
 c()
 print "Callable ", callable(c), callable(a), callable(PseudoFunc)
 

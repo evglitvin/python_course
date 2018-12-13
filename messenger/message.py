@@ -36,7 +36,6 @@ class MessageQueue(object):
 
 
 class Processor(object):
-    __metaclass__ = ABCMeta
 
     def __init__(self):
         self._msg_queue = MessageQueue()
@@ -99,6 +98,11 @@ class MessageProcessor(Processor):
                 tx_message.nickname = user.nickname
                 tx_message.requester = nick
                 conn_rec.send(tx_message.to_json())
+        elif msg_type == MessageType.MESSAGE:
+            recip = self._connected_users.get(message.recipient)
+            if recip:
+                _, conn_rec = recip
+                conn_rec.send(message.to_json())
         else:
             print "WARN: unknown message type"
 

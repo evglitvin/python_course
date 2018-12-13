@@ -26,9 +26,21 @@ class Enum(object):
 
 class JsonObject(object):
     def __init__(self, json_obj=None):
-        self.__dict__.update(json_obj or {})
+        self.update(json_obj or {})
 
     __getattr__ = object.__dict__.get
+
+    def __getitem__(self, item):
+        return self.__dict__.get(item)
+
+    def update(self, other):
+        self.__dict__.update(other)
+
+
+js = JsonObject()
+js.update({'name': 'Jhon', 'lname': 'McLane'})
+print js.name
+print js['lname']
 
 
 class IndexedFile(object):

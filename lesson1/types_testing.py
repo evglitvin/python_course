@@ -1,5 +1,5 @@
 
-# default arguments
+# default argumen
 import math
 
 ttt = 0
@@ -103,3 +103,11 @@ for i in my_xrange(5):
 assert list(my_xrange(10)) == list(xrange(10))
 assert list(my_xrange(10, 20)) == list(xrange(10, 20))
 assert list(my_xrange(10, 20, 2)) == list(xrange(10, 20, 2))
+
+
+
+
+def arg_kwarg(n1, n2, *args, **kwargs):
+    print n1, n2
+
+    print(*args)
