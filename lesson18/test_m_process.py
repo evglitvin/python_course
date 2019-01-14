@@ -1,19 +1,23 @@
 import time
 from multiprocessing import Process
+from multiprocessing import Queue
 
 
-def func():
+def func(q):
     start = time.time()
     a = 0
+    # time.sleep(10)
     for _ in xrange(1000000):
         a += 1
+        q.put({})
     print time.time() - start
 
 
 list_pr = []
+queue = Queue(1000)
 start_p = time.time()
 for _ in xrange(6):
-    pr = Process(target=func)
+    pr = Process(target=func, args=(queue, ))
     pr.start()
     list_pr.append(pr)
 

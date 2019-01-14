@@ -1,32 +1,41 @@
-import random
-import time
 import threading
 
 a = 0
-lock = threading.Lock()
-
+#
+sem = threading.BoundedSemaphore(10)
 
 # TODO implement data sharing between threads
 
+
 class MThread(threading.Thread):
-    def __init__(self):
+
+    def __init__(self, lock, daemonize=True):
         super(MThread, self).__init__()
+        self.lock = lock
+        self.setDaemon(daemonize)
 
     def run(self):
         global a
         for _ in xrange(1000):
-            # lock.acquire()
-            a += 1
+            self.lock.acquire()
+
+            a = a + 1
             print self.name
-            # lock.release()
+
+            self.lock.release()
+
+            kfel;skfe;
             # time.sleep(random.random() * 0.1)
 
 
 list_threads = []
-for i in xrange(10):
-    thr = MThread()
+sem = threading.Semaphore(10)
+lock = threading.RLock()
+for i in xrange(1000):
+    # thr = MThread(sem) or ...
+
+    thr = MThread(sem)
     thr.setName('name{}'.format(i))
-    thr.setDaemon(True)
     thr.start()
     list_threads.append(thr)
 
@@ -38,3 +47,4 @@ b = a + 1
 #     print threading.active_count()
 
 print 'shutting down a={}'.format(a)
+

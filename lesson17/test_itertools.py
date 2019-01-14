@@ -41,7 +41,8 @@ def cycle(iterable):
             c_iter = iter(iterable)
             yield c_iter.next()
 
-# itertools.cycle = cycle
+
+itertools.cycle = cycle
 
 c = itertools.cycle('abc')
 for i in xrange(10):

@@ -11,13 +11,14 @@ class MThreadWithShutdown(threading.Thread):
     def __init__(self, event, queue,  daemonize=True):
         super(MThreadWithShutdown, self).__init__()
         self.event = event
+        self.queue = queue
         self.setDaemon(daemonize)
 
     def run(self):
         while not self.event.is_set():
             a = random.random() * 10
             time.sleep(a)
-            queue.put(a)
+            self.queue.put(a)
             print "{} is working".format(self.name)
         print "{} releases resources".format(self.name)
 
@@ -26,13 +27,14 @@ list_threads = []
 event = threading.Event()
 
 def term_all(a, b):
+    # connection is None
     print a
     event.set()
 
 # SIGTERM for e.g. command kill from bash or os.kill() - equivalent
 signal.signal(signal.SIGTERM, term_all)
 
-# SIGTINT for Ctrl-C or stop from pycharm
+# SIGINT for Ctrl-C or stop from pycharm
 signal.signal(signal.SIGINT, term_all)
 
 queue = Queue.Queue(1000)
@@ -47,7 +49,10 @@ for i in xrange(10):
 
 timeout = time.time() + 30
 sum_times = 0
+
 while not event.is_set() and timeout > time.time():
+    #  if connnection is not None
+
     time.sleep(2)
     try:
         sum_times += queue.get(False)
@@ -62,6 +67,8 @@ for thr in list_threads:
 
 while not queue.empty():
     try:
+        a = queue.get(False)
+        print "value {} is added after timeout".format(a)
         sum_times += queue.get(False)
     except Queue.Empty:
         print sys.exc_traceback
