@@ -3,7 +3,7 @@ from multiprocessing import Process
 from multiprocessing import Queue
 
 
-def func(q):
+def func(q, b):
     start = time.time()
     a = 0
     # time.sleep(10)
@@ -17,7 +17,7 @@ list_pr = []
 queue = Queue(1000)
 start_p = time.time()
 for _ in xrange(6):
-    pr = Process(target=func, args=(queue, ))
+    pr = Process(target=func, args=(queue, 1))
     pr.start()
     list_pr.append(pr)
 

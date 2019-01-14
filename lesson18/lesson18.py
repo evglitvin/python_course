@@ -11,6 +11,7 @@ def func_add():
     b.append('6')
     print b
 
+
 func_add()
 print b
 
