@@ -1,26 +1,33 @@
 import time
-from Queue import Queue
+from Queue import Queue, Empty
 import threading
 from collections import deque
-from random import randint
 
 
 class Worker(threading.Thread):
-    def __init__(self, func,  a_res, *args):
+    def __init__(self, task_queue):
         super(Worker, self).__init__()
-        self.setDaemon(True)
-        self._func = func
+        self._task_queue = task_queue
 
-        self._args = args
-        self._async_res = a_res
+        self.setDaemon(True)
 
     def run(self):
-        self._async_res.set_started(True)
-        self._async_res.set_result(self._func(*self._args))
+        # Queue.empty()
+        while True:
+            try:
+                a_res, sem, func, args = self._task_queue.get()
+            except Empty:
+                break
+            sem.acquire()
+            a_res.set_started(True)
+            a_res.set_result(func(*args))
+            sem.release()
 
 
-class NotStartedError(Exception):
-    pass
+class SmartSemaphore(threading._Semaphore):
+    # Using semaphore to get the value
+    def get_value(self):
+        return self._Semaphore__value
 
 
 class AsyncResult(object):
@@ -56,49 +63,31 @@ class AsyncResult(object):
 class ThreadPool(object):
     def __init__(self, num_threads=8):
         self._num = num_threads
-        # self._counter = 0
-        # self._res_queue = Queue(1000)
-        # self.results = {}
+        self._task_queue = Queue()
+        self._sem = SmartSemaphore(num_threads)
 
     def apply(self, func, *args):
-        # TODO do limit of workers (use semaphore)
         async = AsyncResult()
-        Worker(func, async, *args).start()
+        self._task_queue.put((async, self._sem, func, args))
+        if self._sem.get_value() > 0:
+            Worker(self._task_queue).start()
         return async
 
+    def imap_unordered(self, func, iter_args):
+        apply_results = deque([])
 
-def func(*args):
-    time.sleep(randint(2, 10))
-    return sum(args)
+        for arg in iter_args:
+            apply_results.append(self.apply(func, arg))
 
+        while apply_results:
+            res = apply_results.popleft()
+            if res.ready():
+                yield res.get()
+            else:
+                apply_results.append(res)
+                time.sleep(0.005)
 
-# func = sum
-pool = ThreadPool(10)
+    def get_num_workers(self):
+        return self._num - self._sem.get_value()
 
-
-def gen_rand_numbers(numbers_len):
-    for _ in xrange(numbers_len):
-        yield randint(0, 100)
-
-
-w2 = pool.apply(func, 1, 2, 3, 4)
-
-apply_results = deque([])
-for _ in xrange(10):
-    r_numbers = tuple(gen_rand_numbers(randint(5, 10)))
-    apply_results.append(pool.apply(func, *r_numbers))
-
-start = time.time()
-print "before waiting"
-
-
-# for item in apply_results:
-while apply_results:
-    res = apply_results.popleft()
-    if res.ready():
-        print res.get()
-    else:
-        apply_results.append(res)
-
-# print apply_results[0].get()
-print "retrieved result {}".format(time.time() - start)
+    # see lesson11 with tests

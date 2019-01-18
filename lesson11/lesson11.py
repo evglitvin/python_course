@@ -3,6 +3,7 @@ from functools import wraps
 from multiprocessing.dummy import Pool as ThreadPool
 import requests
 import time
+from lesson18.threadpool import ThreadPool as Tp
 
 LIST_RES = [
     'https://en.wikipedia.org/wiki/Money',
@@ -43,6 +44,17 @@ def count_p_tags():
     for item in tp.imap_unordered(parse_url, LIST_RES):
         print item
 
+
+@measure_time
+def count_p_tags1():
+
+    tp = Tp(10)
+    for item in tp.imap_unordered(parse_url, LIST_RES):
+        print item
+
+
 if __name__ == "__main__":
     count_p_tags()
+    count_p_tags1()
     print count_p_tags.perfomance
+    print count_p_tags1.perfomance
