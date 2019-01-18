@@ -74,10 +74,7 @@ class ThreadPool(object):
         return async
 
     def imap_unordered(self, func, iter_args):
-        apply_results = deque([])
-
-        for arg in iter_args:
-            apply_results.append(self.apply(func, arg))
+        apply_results = deque(self.apply(func, arg) for arg in iter_args)
 
         while apply_results:
             res = apply_results.popleft()
@@ -88,10 +85,7 @@ class ThreadPool(object):
                 time.sleep(0.005)
 
     def map(self, func, iter_args):
-        apply_results = deque([])
-
-        for arg in iter_args:
-            apply_results.append(self.apply(func, arg))
+        apply_results = deque(self.apply(func, arg) for arg in iter_args)
 
         results = []
         while apply_results:
