@@ -87,6 +87,18 @@ class ThreadPool(object):
                 apply_results.append(res)
                 time.sleep(0.005)
 
+    def map(self, func, iter_args):
+        apply_results = deque([])
+
+        for arg in iter_args:
+            apply_results.append(self.apply(func, arg))
+
+        results = []
+        while apply_results:
+            res = apply_results.popleft()
+            results.append(res.get())
+        return results
+
     def get_num_workers(self):
         return self._num - self._sem.get_value()
 
