@@ -53,8 +53,18 @@ def count_p_tags1():
         print item
 
 
+@measure_time
+def count_p_tags2():
+
+    tp = Tp(10)
+    for item in tp.map(parse_url, LIST_RES):
+        print item
+
+
 if __name__ == "__main__":
     count_p_tags()
     count_p_tags1()
+    count_p_tags2()
     print count_p_tags.perfomance
     print count_p_tags1.perfomance
+    print count_p_tags2.perfomance
