@@ -30,9 +30,16 @@ class Node(object):
                 stack.append(el.right)
         return res_list
 
+    @staticmethod
+    def walk_recursive(root):
+        if not root:
+            return []
+        return Node.walk_recursive(root.left) + [root.data] + Node.walk_recursive(root.right)
+
+
 t = Node(8)
 t.add_child(Node(6))
 t.add_child(Node(10)).add_child(Node(20))
 
-print [i.data for i in Node.walk(t)]
+print Node.walk_recursive(t)
 

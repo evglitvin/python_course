@@ -30,15 +30,18 @@ wo_rec = get_sum(list_numbers)
 print recursive_sum, wo_rec, recursive_sum == wo_rec
 
 
-                  #   ('c')
-                  #   /   \
-                  #  ('a', 'o')
-                  #  /  \     \
-                  # ('t','r')  ('p')
+                  #      ('c')
+                  #      /   \
+                  #    ('a', 'o')
+                  #    /  \     \
+                  #  ('t','r')  ('p')
+                  #   /
+                  #  ('egory')
 
 class Node(object):
-    def __init__(self, data):
+    def __init__(self, data, flag=False):
         self.data = data
+        self.flag = flag
         self.children = []
 
     def add_child(self, child):
@@ -55,12 +58,14 @@ class Node(object):
             else:
                 for ch in el.children:
                     stack.append((data + ch.data, ch))
+                if el.flag:
+                    yield data
 
 
 root = Node('c')
 t = root.add_child(Node('a'))
 root.add_child(Node('o')).add_child(Node('p'))
-t.add_child(Node('t'))
+t.add_child(Node('t', True)).add_child(Node('egory'))
 t.add_child(Node('r'))
 
 print list(Node.walk(root))
