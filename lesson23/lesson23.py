@@ -17,6 +17,7 @@ l = [9,3,7,2,78,4,3,6,7,4, 7 ,3, 4 , 5 , 6 , 7 ,8 ,9]
 
 # l = []
 
+
 def process_diff(in_list):
     res_sum = 0
     min_el = min(in_list)
@@ -47,6 +48,7 @@ def process_diff1(in_list):
         res_sum += in_list[-1]
     return res_sum
 
+
 print process_diff(l),
 print process_diff1(l)
 
@@ -59,8 +61,13 @@ def crypt(key, data):
         res.append(chr(ord(ch) ^ ((h + ord(key[i % lkey])) & 0xff)))
     return "".join(res)
 
+
 def decrypt(key, crypted_data):
     return crypt(key, crypted_data)
 
-print decrypt('jfoerjfreio', crypt('jfoerjfreio', 'Hello')) == 'Hello'
-print bin(ord('i')), bin(ord('j')), bin(ord('i') ^ ord('j'))
+
+secret_key = 'jfoerjfreio'
+print decrypt(secret_key, crypt(secret_key, 'Hello')) == 'Hello'
+
+# we shouldn't find the secret using in_data and crypted data
+assert decrypt(crypt(secret_key, 'Hello'), 'Hello') != secret_key
