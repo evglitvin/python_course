@@ -13,23 +13,54 @@ l = [9,3,7,2,78,4,3,6,7,4]
 78 - 3
 +...
 """
-l = [9,3,7,2,78,4,3,6,7,4, 7 ,3, 4 , 5 , 6 , 7 ,8 ,9]
-
+l = [1, 3, 3, 2, 5]
+# l = [5, 1, 3, 4, 6, 2]
 # l = []
+
+def finalPrice(prices):
+    # Write your code here
+
+    res_sum = 0
+    min_el = min(prices)
+    idxs = []
+    for idx in xrange(len(prices) - 1):
+        if prices[idx] == min_el:
+            min_el = min(prices[idx + 1:])
+            idxs.append(idx)
+            res_sum += prices[idx]
+        else:
+            res_sum += (prices[idx] - min_el)
+    if min_el <= prices[-1]:
+        res_sum += prices[-1]
+        idxs.append(len(prices) - 1)
+    print res_sum
+    print " ".join(str(i) for i in idxs)
+
+finalPrice(l)
+
+
+
+
+
+
 
 
 def process_diff(in_list):
     res_sum = 0
     min_el = min(in_list)
+    idxs = []
     for idx in xrange(len(in_list) - 1):
         if in_list[idx] == min_el:
             min_el = min(in_list[idx + 1:])
+            idxs.append(idx)
             res_sum += in_list[idx]
         else:
             res_sum += (in_list[idx] - min_el)
     if min_el == in_list[-1]:
         res_sum += in_list[-1]
-    return res_sum
+        idxs.append(len(in_list) - 1)
+    print res_sum
+    print " ".join(str(i) for i in idxs)
 
 
 def process_diff1(in_list):
@@ -50,7 +81,7 @@ def process_diff1(in_list):
 
 
 print process_diff(l),
-print process_diff1(l)
+# print process_diff1(l)
 
 
 def crypt(key, data):
