@@ -1,3 +1,13 @@
+import datetime
+import random
+import struct
+from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+from SocketServer import ThreadingMixIn, BaseRequestHandler
+from _weakrefset import WeakSet
+
+from pymongo import MongoClient
+
+
 class Point(object):
     def __init__(self, x, y):
         self.x = x
@@ -12,10 +22,10 @@ class Point(object):
         return point
 
     def __sub__(self, other):
-        return Point(self.x - other.x, self.y - other.y)
+        return Point(self.x - other[0], self.y - other[1])
 
     def __add__(self, other):
-        return Point(self.x + other.x, self.y + other.y)
+        return Point(self.x + other[0], self.y + other[1])
 
 
 class Map(object):
@@ -51,7 +61,7 @@ class Player(object):
     def __init__(self, id, pos=None):
         self.pos = pos
         self.id = id
-        self.visible_pl = set() # ATTENTION! Cyclic links
+        self.visible_pl = WeakSet() # ATTENTION! Cyclic links
 
     def get_field_of_view(self):
         return Point.validate_coord(self.pos - (16, 16)), Point.validate_coord(self.pos + (16, 16))
@@ -63,7 +73,48 @@ class Player(object):
         player.add_player(self)
         self.add_player(player)
 
+    def on_event(self, event):
+        pass
+
+    def notify_all(self, event):
+        for pl in self.visible_pl:
+            pl.on_event(event)
+
+    def add_task(self, conn):
+        conn.tasks.insert_one({'timeout':
+                datetime.datetime.utcnow() + datetime.timedelta(seconds=random.randint(10, 601))})
+
     def __hash__(self):
         return self.id
 
 
+class ThreadServer(ThreadingMixIn, HTTPServer):
+    pass
+
+
+class Handler(BaseHTTPRequestHandler):
+
+    # def do_GET(self):
+
+
+    def do_POST(self, ):
+        # requests.get('http://localhost:8090/player/')
+        print self.path    # /player/
+        self.send_response(200)
+        self.send_header('Content-type', 'application/octet-stream')
+        self.end_headers()
+
+        # Send the html message
+        self.wfile.write('Hello')
+        return
+
+# 643,25,436,7,53
+# struct.pack('hhhh', 845,6,43,623)
+
+# GET HTTP/1.0 /543634/432523
+
+SERV = ('localhost', 8090)
+
+if __name__ == '__main__':
+    serv = ThreadServer(SERV, Handler)
+    serv.serve_forever()
