@@ -21,9 +21,7 @@ def gen_points(n):
         if count <= 0:
             if random() < 0.01:
                 count = randint(100, 2000)
-                y = randint(0, MAX_Y)
-            else:
-                y = randint(0, MAX_Y)
+            y = randint(0, MAX_Y)
         else:
             count -= 1
         yield x, y

@@ -1,3 +1,6 @@
+import sys
+import time
+
 import pygame
 import struct
 from threading import Thread
@@ -7,16 +10,38 @@ import requests
 from pygame.rect import Rect
 
 
-SERV = ('http://localhost:8090/player/field_of_view')
+SERV = ('http://127.0.0.1:8090/player/field_of_view')
 
 
 class Requester(Thread):
-    def __init__(self):
-        super(Requester, self).__init__()
-        self._is_running = False
+    PL_FORMAT = 'ihh'
 
-    def get_players(self, rect):
-        print requests.post(SERV, data='hello')
+    def __init__(self, _map):
+        super(Requester, self).__init__()
+        self.setDaemon(True)
+        self._map = _map
+        self._pl_size = struct.calcsize(self.PL_FORMAT)
+        self.start()
+        print >> sys.stderr, "started"
+
+    def run(self):
+        while True:
+            f_view = self._map.get_fov_rect()
+            fov = f_view.topleft + f_view.bottomright
+            buff = struct.pack('hhhh', *fov)
+            print >> sys.stderr, "getting players"
+            resp = requests.post(SERV, data=buff)
+            cont = resp.content
+            players = []
+
+            for i in xrange(0, len(cont), self._pl_size):
+                buff = struct.unpack('ihh', cont[i: i + self._pl_size])
+                players.append(buff)
+            print >> sys.stderr, "players len", len(players)
+            context = Context()
+            context.players = players
+            self._map.set_context(context)
+            time.sleep(0.01)
 
 
 class Context(object):
@@ -41,9 +66,6 @@ class Map(object):
         self.fov_surf = pygame.Surface((self.fov_rect.w * 10, self.fov_rect.h * 10), pygame.SRCALPHA, 32)
         self.fov_surf.fill(self.fov_color, (0, 0, self.fov_rect.w * 10, self.fov_rect.h * 10))
 
-    def update_players(self, in_players):
-        self.players = in_players
-
     def set_context(self, context):
         """
         Called from thread
@@ -53,7 +75,7 @@ class Map(object):
         self.n_context = context
 
     def update_context(self):
-        if self.n_context is not self.context:
+        if self.n_context and self.n_context is not self.context:
             self.context = self.n_context
 
     def get_fov_rect(self):
@@ -101,7 +123,8 @@ class Map(object):
         surf.blit(self.fov_surf, ((self.fov_rect.x - self.view_x) * 10 + 10, (self.fov_rect.y - self.view_y) * 10 + 10))
 
         for pl in self.context.players:
-            pygame.draw.rect(surf, self.pl_color, (20, 20, 10, 10))
+            _, x, y = pl
+            pygame.draw.rect(surf, self.pl_color, (10 + x * 10, 10 + y * 10, 10, 10))
 
         self.update_context()
         # pygame.gfxdraw.rectangle(surf, (10, 10, 100, 100), (0, 0, 0))
@@ -117,7 +140,7 @@ def main():
     # fontImage = myFont.render(helloText, 0, (fontColor))
     mainLoop = True
     map = Map(0)
-
+    Requester(map)
 
     pygame.key.set_repeat(30,30)
 
@@ -136,11 +159,6 @@ def main():
 
                 elif event.key == pygame.K_LEFT:
                     map.mov_fov_left()
-
-                elif event.key == pygame.K_RETURN:
-                    fov = map.fov_rect.topleft + map.fov_rect.bottomright
-                    fov_data = struct.pack('hhhh', *fov)
-                    requests.post(SERV, data=fov_data)
 
             elif event.type == pygame.QUIT:
                 mainLoop = False

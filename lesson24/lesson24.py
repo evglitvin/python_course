@@ -1,9 +1,11 @@
 import datetime
 import random
 import struct
+import sys
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn, BaseRequestHandler
 from _weakrefset import WeakSet
+from collections import defaultdict
 
 from pymongo import MongoClient
 
@@ -30,15 +32,14 @@ class Point(object):
 
 class Map(object):
     def __init__(self):
-        self.players = {} # k: idx of rectange (16 x 16)
+        self.players = defaultdict(set) # k: idx of rectange (16 x 16)
 
     def add_player(self, player):
         x, y = player.pos.x, player.pos.y
         bucket = (x >> 5) | ((y >> 5) << 4)
-        self.players.setdefault(bucket, set()).add(player)
+        self.players[bucket].add(player)
 
-    def get_players_around(self, player):
-        top_left, bottom_right = player.get_field_of_view()
+    def get_players_around(self, top_left, bottom_right):
         bottom_left = Point(top_left.x, bottom_right.y)
         top_right = Point(bottom_right.x, top_left.y)
         set_b = {(p.x >> 5) | ((p.y >> 5) << 4) for p in [top_left, bottom_right, bottom_left, top_right]}
@@ -48,7 +49,7 @@ class Map(object):
 
     def get_visible_players(self, player):
         top_left, bottom_right = player.get_field_of_view()
-        for pl in self.get_players_around(player):
+        for pl in self.get_players_around(top_left, bottom_right):
             if (top_left.x < pl.pos.x < bottom_right.x and
                     top_left.y < pl.pos.y < bottom_right.y):
                 yield pl
@@ -92,20 +93,51 @@ class ThreadServer(ThreadingMixIn, HTTPServer):
     pass
 
 
+class GameController(object):
+    def __init__(self):
+        self._map = Map()
+        self._init_players()
+
+    def get_map(self):
+        return self._map
+
+    def _init_players(self):
+        s_pl = set()
+        while len(s_pl) < 20000:
+            rand_pos = (random.randint(0, 512), random.randint(0, 512))
+            while rand_pos in s_pl:
+                rand_pos = (random.randint(0, 512), random.randint(0, 512))
+
+            player = Player(len(s_pl), Point(*rand_pos))
+            self._map.add_player(player)
+            s_pl.add(rand_pos)
+        print >> sys.stderr, "init completed"
+
+
 class Handler(BaseHTTPRequestHandler):
+    gc = GameController()
 
-    # def do_GET(self):
+    def get_players(self):
+        map = Handler.gc.get_map()
+        print >> sys.stderr, "serv getting players"
+        tlx, tly, brx, bry = struct.unpack('hhhh', self.rfile.read(8))
+        for pl in map.get_players_around(Point(tlx, tly), Point(brx, bry)):
+            print pl.id, pl.pos.x, pl.pos.y
+            buf = struct.pack('ihh', pl.id, pl.pos.x, pl.pos.y)
+            self.wfile.write(buf)
 
+    ROUTE = {'player/field_of_view': get_players}
 
-    def do_POST(self, ):
+    def do_POST(self):
         # requests.get('http://localhost:8090/player/')
-        print self.path    # /player/
+           # /player/
         self.send_response(200)
         self.send_header('Content-type', 'application/octet-stream')
         self.end_headers()
 
+        self.ROUTE[self.path.strip('/')](self)
         # Send the html message
-        self.wfile.write('Hello')
+        # self.wfile.write('Hello')
         return
 
 # 643,25,436,7,53
@@ -113,7 +145,7 @@ class Handler(BaseHTTPRequestHandler):
 
 # GET HTTP/1.0 /543634/432523
 
-SERV = ('localhost', 8090)
+SERV = ('', 8090)
 
 if __name__ == '__main__':
     serv = ThreadServer(SERV, Handler)
