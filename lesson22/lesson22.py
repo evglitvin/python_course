@@ -1,3 +1,5 @@
+import cProfile
+import profile
 from collections import deque
 
 
@@ -37,9 +39,12 @@ class Node(object):
         return Node.walk_recursive(root.left) + [root.data] + Node.walk_recursive(root.right)
 
 
-t = Node(8)
-t.add_child(Node(6))
-t.add_child(Node(10)).add_child(Node(20))
+def main():
+    t = Node(8)
+    t.add_child(Node(6))
+    t.add_child(Node(10)).add_child(Node(20))
 
-print Node.walk_recursive(t)
+    Node.walk_recursive(t)
+
+cProfile.run("main()")
 

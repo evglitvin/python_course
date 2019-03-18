@@ -79,5 +79,5 @@ class Loop(object):
                 pass
 
 
-Loop.register(fact)
-Loop.run()
+# Loop.register(fact)
+# Loop.run()

@@ -1,4 +1,6 @@
+import SocketServer
 import datetime
+import profile
 import random
 import struct
 import sys
@@ -11,6 +13,8 @@ from pymongo import MongoClient
 
 
 class Point(object):
+    __slots__ = ('x', 'y')
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -89,7 +93,7 @@ class Player(object):
         return self.id
 
 
-class ThreadServer(ThreadingMixIn, HTTPServer):
+class ThreadServer(ThreadingMixIn, SocketServer.TCPServer):
     pass
 
 
@@ -114,38 +118,36 @@ class GameController(object):
         print >> sys.stderr, "init completed"
 
 
-class Handler(BaseHTTPRequestHandler):
+class Handler(SocketServer.StreamRequestHandler):
     gc = GameController()
 
     def get_players(self):
         map = Handler.gc.get_map()
-        print >> sys.stderr, "serv getting players"
         tlx, tly, brx, bry = struct.unpack('hhhh', self.rfile.read(8))
         for pl in map.get_players_around(Point(tlx, tly), Point(brx, bry)):
-            print pl.id, pl.pos.x, pl.pos.y
             buf = struct.pack('ihh', pl.id, pl.pos.x, pl.pos.y)
             self.wfile.write(buf)
 
-    ROUTE = {'player/field_of_view': get_players}
+    def handle(self):
+        self.get_players()
+    # ROUTE = {'player/field_of_view': get_players}
+    #
+    # def do_POST(self):
+    #     # requests.get('http://localhost:8090/player/')
+    #        # /player/
+    #     self.send_response(200)
+    #     self.send_header('Content-type', 'application/octet-stream')
+    #     self.end_headers()
+    #
+    #     self.ROUTE[self.path.strip('/')](self)
+    #     # Send the html message
+    #     # self.wfile.write('Hello')
+    #     return
 
-    def do_POST(self):
-        # requests.get('http://localhost:8090/player/')
-           # /player/
-        self.send_response(200)
-        self.send_header('Content-type', 'application/octet-stream')
-        self.end_headers()
 
-        self.ROUTE[self.path.strip('/')](self)
-        # Send the html message
-        # self.wfile.write('Hello')
-        return
-
-# 643,25,436,7,53
-# struct.pack('hhhh', 845,6,43,623)
-
-# GET HTTP/1.0 /543634/432523
 
 SERV = ('', 8090)
+
 
 if __name__ == '__main__':
     serv = ThreadServer(SERV, Handler)

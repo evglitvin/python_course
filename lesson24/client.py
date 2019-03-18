@@ -1,3 +1,5 @@
+import cProfile
+import socket
 import sys
 import time
 
@@ -21,6 +23,9 @@ class Requester(Thread):
         self.setDaemon(True)
         self._map = _map
         self._pl_size = struct.calcsize(self.PL_FORMAT)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(('', 8090))
+
         self.start()
         print >> sys.stderr, "started"
 
@@ -29,15 +34,15 @@ class Requester(Thread):
             f_view = self._map.get_fov_rect()
             fov = f_view.topleft + f_view.bottomright
             buff = struct.pack('hhhh', *fov)
-            print >> sys.stderr, "getting players"
-            resp = requests.post(SERV, data=buff)
-            cont = resp.content
+            # resp = requests.post(SERV, data=buff)
+            # cont = resp.content
+            self.sock.send(buff)
+            cont = self.sock.recv(10000)
             players = []
 
             for i in xrange(0, len(cont), self._pl_size):
                 buff = struct.unpack('ihh', cont[i: i + self._pl_size])
                 players.append(buff)
-            print >> sys.stderr, "players len", len(players)
             context = Context()
             context.players = players
             self._map.set_context(context)
@@ -172,4 +177,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    cProfile.run('main()')
