@@ -11,7 +11,7 @@ def get_bits_count(n):
 
 
 def get_bits_count1(n):
-    count = 1
+    count = 0
     while n:
         n = n & (n - 1)
         count += 1
@@ -26,5 +26,5 @@ def get_cipher_for_number(n):
     return int(math.ceil(math.log(n, 10)))
 
 
-print get_bits_for_number(758935)  # number of bits needed to save the number
-print get_cipher_for_number(758935)  # number of ciphers needed to save the number
+# print get_bits_for_number(758935)  # number of bits needed to save the number
+# print get_cipher_for_number(758935)  # number of ciphers needed to save the number
