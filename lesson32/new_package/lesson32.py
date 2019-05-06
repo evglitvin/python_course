@@ -70,7 +70,7 @@ class E(D, dict):
     pass
 
 
-if __name__ == __name__:
+def main():
     print("E mro: ", E.mro())
 
     a = MyObject(11)
